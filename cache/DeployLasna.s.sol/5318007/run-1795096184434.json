@@ -1,8 +1,0 @@
-{
-  "transactions": [
-    {
-      "rpc": "https://lasna-rpc.rnk.dev/"
-    }
-  ],
-  "recovery_generation": "0x334e87b4e8f2ad94e36cf2ad168dd710d4a976ba10a0de8bb8b266e3083ddeed"
-}
