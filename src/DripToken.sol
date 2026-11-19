@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
 /// @notice Demo ERC20. Anyone can mint 1,000 DRIP once per call from the faucet.
 contract DripToken {

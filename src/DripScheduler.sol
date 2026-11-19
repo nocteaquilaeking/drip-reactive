@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
-import {AbstractReactive, IReactive, ISystemContract} from "./interfaces/ReactiveInterfaces.sol";
+import {AbstractReactive} from "./reactive/base/AbstractReactive.sol";
+import {IReactive} from "./reactive/interfaces/IReactive.sol";
+import {ISystemContract} from "./reactive/interfaces/ISystemContract.sol";
 
 /// @notice Lasna timer adapter. Cron100 is emitted about every 100 Lasna blocks;
 /// cronTicksPerDrip_ makes the demo interval adjustable on top of that cadence.
+/// Inherits the official Reactive Omni base contracts (vendored under
+/// src/reactive/), which provide the subscription wildcard sentinel and the
+/// pay()/coverDebt() fee-settlement machinery the system contract requires.
 contract DripScheduler is AbstractReactive {
     uint256 public constant VAULT_CHAIN_ID = 11155111;
+    address internal constant LEGACY_CRON_EMITTER =
+        0x0000000000000000000000000000000000fffFfF;
     uint256 public constant CRON100_TOPIC_0 =
         0xb49937fb8970e19fd46d48f7e3fb00d659deac0347f79cd7cb542f0fc1503c70;
     uint64 public constant CALLBACK_GAS_LIMIT = 250_000;
@@ -26,11 +33,12 @@ contract DripScheduler is AbstractReactive {
             REACTIVE_IGNORE, REACTIVE_IGNORE, REACTIVE_IGNORE);
     }
 
-    /// @notice The contract pays for its reactive transactions and callbacks
-    /// from its own balance; anyone can top it up with lREACT at any time.
-    receive() external payable {}
+    /// @notice Settles any outstanding fee debt from this contract's balance.
+    function coverDebt() external {
+        _coverDebt();
+    }
 
-    function react(LogRecord memory log_) external override onlySystem {
+    function react(IReactive.LogRecord calldata log_) external override onlySystem {
         if (log_.topic0 != CRON100_TOPIC_0 || log_.contractAddress != LEGACY_CRON_EMITTER) return;
         ticks += 1;
         emit TickCounted(ticks);

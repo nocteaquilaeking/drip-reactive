@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
 import {DripToken} from "../src/DripToken.sol";
 import {DripVault} from "../src/DripVault.sol";

@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
+
+import {AbstractCallback} from "./reactive/base/AbstractCallback.sol";
+import {IPayable} from "./reactive/interfaces/IPayable.sol";
 
 interface IERC20Drip {
     function transfer(address to, uint256 amount) external returns (bool);
@@ -7,8 +10,11 @@ interface IERC20Drip {
 }
 
 /// @notice Holds one demo schedule at a time and releases funds only through
-/// authenticated Reactive callbacks on the destination chain.
-contract DripVault {
+/// authenticated Reactive callbacks on the destination chain. Inherits the
+/// official AbstractCallback base (vendored under src/reactive/), which wires
+/// this contract to the chain's callback proxy for fee settlement (pay() /
+/// coverDebt()) and provides the callback-sender authentication modifier.
+contract DripVault is AbstractCallback {
     struct Schedule {
         address user;
         address recipient;
@@ -20,8 +26,6 @@ contract DripVault {
     }
 
     IERC20Drip public immutable token;
-    address public immutable callbackProxy;
-    address public immutable reactiveContract;
     Schedule private _schedule;
 
     event ScheduleConfigured(address indexed user, address indexed recipient, uint256 amount, uint256 totalDrips);
@@ -29,11 +33,26 @@ contract DripVault {
     event SchedulePaused(address indexed user);
     event ScheduleCancelled(address indexed user, uint256 refunded);
 
-    constructor(address token_, address callbackProxy_, address reactiveContract_) {
+    constructor(address token_, address callbackProxy_, address reactiveContract_)
+        AbstractCallback(IPayable(payable(callbackProxy_)), reactiveContract_)
+    {
         require(token_ != address(0) && callbackProxy_ != address(0) && reactiveContract_ != address(0), "Zero address");
         token = IERC20Drip(token_);
-        callbackProxy = callbackProxy_;
-        reactiveContract = reactiveContract_;
+    }
+
+    /// @notice The callback proxy this vault pays delivery fees to.
+    function callbackProxy() external view returns (address) {
+        return address(_SERVICE_PROVIDER);
+    }
+
+    /// @notice The reactive contract whose callbacks this vault accepts.
+    function reactiveContract() external view returns (address) {
+        return _CALLBACK_SENDER;
+    }
+
+    /// @notice Settles any outstanding fee debt from this contract's balance.
+    function coverDebt() external {
+        _coverDebt();
     }
 
     function configure(address recipient, uint256 amountPerDrip, uint256 totalDrips) external {
@@ -46,11 +65,12 @@ contract DripVault {
         emit ScheduleConfigured(msg.sender, recipient, amountPerDrip, totalDrips);
     }
 
-    /// @dev Reactive Network overwrites the first payload address with the
-    /// requesting reactive contract identity. Both checks are required.
-    function executeDrip(address reactiveIdentity) external {
-        require(msg.sender == callbackProxy, "Only callback proxy");
-        require(reactiveIdentity == reactiveContract, "Unauthorized reactive contract");
+    /// @dev The callback proxy overwrites the first payload address with the
+    /// requesting reactive contract's identity. Both checks are required:
+    /// the caller must be the proxy, and the injected identity must be the
+    /// configured scheduler (enforced by the onlyCallbackSender modifier).
+    function executeDrip(address reactiveIdentity) external onlyCallbackSender(reactiveIdentity) {
+        require(msg.sender == address(_SERVICE_PROVIDER), "Only callback proxy");
         Schedule storage s = _schedule;
         require(s.user != address(0) && s.dripsRemaining > 0 && !s.paused, "No active schedule");
 

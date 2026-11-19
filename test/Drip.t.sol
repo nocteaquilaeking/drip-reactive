@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.29;
 
 import {DripToken} from "../src/DripToken.sol";
 import {DripVault} from "../src/DripVault.sol";
 import {DripScheduler} from "../src/DripScheduler.sol";
-import {IReactive, ISystemContract} from "../src/interfaces/ReactiveInterfaces.sol";
+import {IReactive} from "../src/reactive/interfaces/IReactive.sol";
+import {ISystemContract} from "../src/reactive/interfaces/ISystemContract.sol";
 
 interface Vm {
     function prank(address) external;
@@ -18,7 +19,7 @@ contract MockSystem {
     function subscribe(uint256,address,uint256,uint256,uint256,uint256) external { subscriptions++; }
     function requestCallbackV_1_0(ISystemContract.CallbackConfiguration_V_1_0 calldata) external { callbackRequests++; }
     function deliver(address target, IReactive.LogRecord calldata log_) external {
-        IReactive(target).react(log_);
+        IReactive(payable(target)).react(log_);
     }
 }
 
@@ -39,7 +40,7 @@ contract DripTest {
         vm.expectRevert(abi.encodeWithSignature("Error(string)", "Only callback proxy"));
         vault.executeDrip(REACTIVE);
         vm.prank(PROXY);
-        vm.expectRevert(abi.encodeWithSignature("Error(string)", "Unauthorized reactive contract"));
+        vm.expectRevert(abi.encodeWithSignature("CallbackNotAuthorized(address,address)", address(0x999), REACTIVE));
         vault.executeDrip(address(0x999));
         vm.prank(PROXY); vault.executeDrip(REACTIVE);
         require(token.balanceOf(BOB) == 10 ether, "recipient not paid");
