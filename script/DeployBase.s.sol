@@ -14,8 +14,8 @@ interface VmScript {
 contract DeployBase {
     VmScript private constant vm = VmScript(address(uint160(uint256(keccak256("hevm cheat code")))));
     function run() external returns (DripToken token, DripVault vault) {
-        uint256 key = vm.envUint("BASE_SEPOLIA_PRIVATE_KEY");
-        address proxy = vm.envAddress("BASE_SEPOLIA_CALLBACK_PROXY");
+        uint256 key = vm.envUint("SEPOLIA_PRIVATE_KEY");
+        address proxy = vm.envAddress("SEPOLIA_CALLBACK_PROXY");
         address reactive = vm.envAddress("DRIP_SCHEDULER_ADDRESS");
         vm.startBroadcast(key);
         token = new DripToken();

@@ -6,7 +6,7 @@ import {AbstractReactive, IReactive, ISystemContract} from "./interfaces/Reactiv
 /// @notice Lasna timer adapter. Cron100 is emitted about every 100 Lasna blocks;
 /// cronTicksPerDrip_ makes the demo interval adjustable on top of that cadence.
 contract DripScheduler is AbstractReactive {
-    uint256 public constant VAULT_CHAIN_ID = 84532;
+    uint256 public constant VAULT_CHAIN_ID = 11155111;
     uint256 public constant CRON100_TOPIC_0 =
         0xb49937fb8970e19fd46d48f7e3fb00d659deac0347f79cd7cb542f0fc1503c70;
     uint64 public constant CALLBACK_GAS_LIMIT = 250_000;
