@@ -26,6 +26,10 @@ contract DripScheduler is AbstractReactive {
             REACTIVE_IGNORE, REACTIVE_IGNORE, REACTIVE_IGNORE);
     }
 
+    /// @notice The contract pays for its reactive transactions and callbacks
+    /// from its own balance; anyone can top it up with lREACT at any time.
+    receive() external payable {}
+
     function react(LogRecord memory log_) external override onlySystem {
         if (log_.topic0 != CRON100_TOPIC_0 || log_.contractAddress != LEGACY_CRON_EMITTER) return;
         ticks += 1;

@@ -9,7 +9,8 @@ set -euo pipefail
 : "${DRIP_SCHEDULER_ADDRESS:?Set predicted Lasna scheduler address before deployment}"
 : "${DRIP_VAULT_ADDRESS:?Set predicted Ethereum Sepolia vault address before deployment}"
 : "${CRON_TICKS_PER_DRIP:=2}"
-export SEPOLIA_CALLBACK_PROXY CRON_TICKS_PER_DRIP
+: "${SCHEDULER_FUNDING:=1500000000000000000}"
+export SEPOLIA_CALLBACK_PROXY CRON_TICKS_PER_DRIP SCHEDULER_FUNDING
 
 echo "Deploying scheduler to Lasna (vault: $DRIP_VAULT_ADDRESS)..."
 forge script script/DeployLasna.s.sol:DeployLasna --rpc-url "$LASNA_RPC_URL" --broadcast

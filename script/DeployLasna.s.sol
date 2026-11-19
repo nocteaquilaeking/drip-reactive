@@ -16,8 +16,9 @@ contract DeployLasna {
         uint256 key = vm.envUint("LASNA_PRIVATE_KEY");
         address vault = vm.envAddress("DRIP_VAULT_ADDRESS");
         uint256 interval = vm.envUint("CRON_TICKS_PER_DRIP");
+        uint256 funding = vm.envUint("SCHEDULER_FUNDING");
         vm.startBroadcast(key);
-        scheduler = new DripScheduler(vault, interval);
+        scheduler = new DripScheduler{value: funding}(vault, interval);
         vm.stopBroadcast();
     }
 }
