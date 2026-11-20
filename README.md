@@ -10,7 +10,7 @@ The reactive contract uses the Omni system at `0x8888888888888888888888888888888
 
 Each request encodes `executeDrip(address)` with `address(0)` in the first argument. The callback system overwrites that leading address with the requesting reactive contract's identity. The vault requires both the Ethereum Sepolia callback proxy (`0xAa14d9Cd0f788Ca23d11805986C1d8bd035D23b4`) and the configured scheduler identity. A user can pause a schedule or cancel it and recover all unspent DRIP. This demo supports one active schedule per vault deployment.
 
-The callback proxy bills the vault in Ethereum Sepolia ETH, and Lasna charges the scheduler in lREACT. Fund both contracts before expecting automation. Callback gas is set to 250,000; verify the proxy's current fees and keep enough ETH in the vault.
+The callback proxy bills the vault in Ethereum Sepolia ETH, and Lasna charges the scheduler in lREACT. Fund both contracts before expecting automation. Callback gas is set to 1,000,000. This value matters: the Sepolia callback proxy forwards the delivery transaction's gas minus a fixed overhead of about 200,000, and `executeDrip` needs roughly 284,000 gas. Earlier deployments of this project with limits of 250,000 and 500,000 starved every delivery inside the vault call (the proxy logged `CallbackFailure` each time); 1,000,000 forwards roughly 780,000 and the loop completes.
 
 ## Build and test
 
@@ -34,13 +34,22 @@ Then run `./deploy.sh`. It submits Lasna first and Ethereum Sepolia second and p
 
 Deploy only these contracts for this demo; no deployment is performed by this repository. Configure the user's schedule by calling `faucet()` on DRIP, approving the vault, then calling `configure(recipient, amountPerDrip, totalDrips)`. The token faucet is intentionally public and demo-only.
 
-### Deployments
+### Deployments (live)
 
-| Network | Contract | Address | Transaction hash |
-| --- | --- | --- | --- |
-| Ethereum Sepolia | DripToken | 0x262a38b0521c0cc6cda40f4d590192643d82db0d | 0x872097c76b9d4dd08e552fc50de9d36426f68d6de54ddf7fc1032ded531f832c |
-| Ethereum Sepolia | DripVault | 0x3cd538efa1e4a653c78d60d0ba5708c6f4ea5d51 | 0xf3b717d95b5a1ed03b71e5f189c5f56ad3ba68fd50080f8cd4e2ebe8a81c4792 |
-| Lasna | DripScheduler | 0x49fc0e0a7f286e57e1c711cd02779825313db12a | 0x1280ca61b2f8b8549b0bd4c134c9d4835f806bd55740496fce70ea6e9547b9df |
+| Network | Contract | Address |
+| --- | --- | --- |
+| Ethereum Sepolia | DripToken | 0x262a38b0521c0cc6cda40f4d590192643d82db0d |
+| Ethereum Sepolia | DripVault | 0x96A301C8AA409f0F826d5eDf06F8153c6e6498f6 |
+| Lasna | DripScheduler | 0xF9d1E3cA81f6f105d8a913C8bdDC932ED7506b38 |
+
+The live schedule on this vault: 5 drips of 10 DRIP each to `0x0F0c69250002aB838C2BeE7e6C56BB2e0b2ebB36`, one drip per 2 CRON100 ticks (configure transaction `0x7a64c1ba45bed17c8495d98c0004108bddbe455f3e862bb6195c5c17c248ea03`).
+
+### Verified end-to-end loop
+
+The full loop — CRON event on Lasna, callback request, proxy delivery on Sepolia, token transfer — has completed on-chain:
+
+* Callback request (Lasna, scheduler → Omni system): [0x94aadbec283811c2268bce216e472d90ea480633b3d1fb82b63f574020b58b78](https://lasna.reactscan.net/tx/0x94aadbec283811c2268bce216e472d90ea480633b3d1fb82b63f574020b58b78)
+* Callback delivery (Ethereum Sepolia, proxy → `DripVault.executeDrip`, `Dripped` event + 10 DRIP transfer to the recipient in the same transaction): [0x05e3434f2c551b595c9a6b449ff979b882cefe699025583a92326434411f32bc](https://sepolia.etherscan.io/tx/0x05e3434f2c551b595c9a6b449ff979b882cefe699025583a92326434411f32bc)
 
 ## Demo flow
 
@@ -50,7 +59,7 @@ Deploy only these contracts for this demo; no deployment is performed by this re
 4. On Ethereum Sepolia, follow the callback delivery transaction from the documented proxy. Verify `Dripped` reports the user, recipient, installment, increasing index, and decreasing remaining count; verify the token transfer in the same transaction.
 5. Repeat until `dripsRemaining` reaches zero, or call `pause()` / `cancel()` as the schedule owner and verify the remaining-token refund.
 
-Explorer placeholders: [Lasna Reactscan](https://lasna.reactscan.net/) — scheduler and callback requests: TBD; [Ethereum Sepolia explorer](https://sepolia.etherscan.io/) — token, vault, and callback deliveries: TBD.
+Explorers: [Lasna Reactscan](https://lasna.reactscan.net/address/0xF9d1E3cA81f6f105d8a913C8bdDC932ED7506b38) — scheduler and callback requests; [Ethereum Sepolia Etherscan](https://sepolia.etherscan.io/address/0x96A301C8AA409f0F826d5eDf06F8153c6e6498f6) — vault, schedule, and callback deliveries.
 
 ## Documentation references and implementation notes
 

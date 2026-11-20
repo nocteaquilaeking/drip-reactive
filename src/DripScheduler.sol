@@ -16,7 +16,7 @@ contract DripScheduler is AbstractReactive {
         0x0000000000000000000000000000000000fffFfF;
     uint256 public constant CRON100_TOPIC_0 =
         0xb49937fb8970e19fd46d48f7e3fb00d659deac0347f79cd7cb542f0fc1503c70;
-    uint64 public constant CALLBACK_GAS_LIMIT = 250_000;
+    uint64 public constant CALLBACK_GAS_LIMIT = 1_000_000;
 
     address public immutable vault;
     uint256 public immutable cronTicksPerDrip;
